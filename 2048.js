@@ -32,6 +32,7 @@ var Game = {
 		/* instantiate the arrays that will be used to keep track of which boxes are filled or empty */
 		Game.initCheckArrays();
 		Game.initLayers();
+		Game.start();
 	},
 	
 	createGrid: function() {
@@ -50,14 +51,16 @@ var Game = {
 	},
 	
 	activateButtonListeners: function() {
-	
+		$(document).keydown(function(event){
+			event.preventDefault();
+			console.log("key index : " + event.which);
+		});
 	},
 	
 	initCheckArrays: function() {
 		/* loop through the arrays and initialize them all */
 		for(var i=0; i<20; i++) {
-			Game.squaresEmpty.push(true);
-			Game.squaresFilled.push(false);
+			Game.squaresEmpty.push(i);
 		}
 	},
 	
@@ -88,6 +91,13 @@ var Game = {
 	},
 
 	generateRandomTile: function() {
+		/* generate a random location for the file to generate where there is no tile already */
+		var randIndex = Game.squaresEmpty[Math.floor(Math.random() * Game.squaresEmpty.length)];
+	},
 	
+	start: function() {
+		for(var i=0; i<2; i++) {
+			Game.generateRandomTile();
+		}
 	}
 }
