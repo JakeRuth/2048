@@ -60,12 +60,18 @@ var Game = {
 			
 			/* sort the tiles array */
 			Game.tiles = Utilities.sortTileArray(Game.tiles);
-			for(var i=0; i<Game.tiles.length; i++) {
-				console.log(Game.tiles[i].index);
-			}
+			
 			/* Up arrow pressed */
 			if(event.which === 38) {
 				Game.moveUp();
+				console.log('squares filled: ');
+				for(var i=0; i<Game.squaresFilled.length; i++) {
+					console.log(Game.squaresFilled[i]);
+				}
+				console.log('squares empty: ');
+				for(var i=0; i<Game.squaresEmpty.length; i++) {
+					console.log(Game.squaresEmpty[i]);
+				}
 			}
 			
 			/* Down arrow pressed */
@@ -132,7 +138,7 @@ var Game = {
 		Game.squaresFilled.push(randEmptyValue);
 		Game.squaresEmpty.splice(randIndex, 1);
 		
-		var group = new Kinetic.Group();
+		group = new Kinetic.Group();
 		
 		/* decide whether square will be a 2 or 4 randomly */
 		var squareValue;
@@ -163,7 +169,7 @@ var Game = {
 			name: 'text'
 		});
 		group.add(text);
-		Game.tiles.push({group: group, value: squareValue, index: randEmptyValue});
+		Game.tiles.push({tile: square, text: text, value: squareValue, index: randEmptyValue});
 		
 		Game.tileLayer.add(group);
 		Game.stage.add(Game.tileLayer);
@@ -179,22 +185,49 @@ var Game = {
 	moveUp: function() {
 		/* loop through the tiles starting from the top of the grid and traverse down
 		   sliding the tiles up if necessary */
-		var tileIndex;
+		var tileIndex, moveIndex;
 		for(var i=0; i<Game.tiles.length; i++) {
+			var move;
 			tileIndex = Game.tiles[i].index;
 			/* if the tile is in the top row do nothing */
 			if(tileIndex % 4 === 0) {
-				continue;
+				move = false;
 			} else {
-				
+				/* check to see if the tile before it is free, if it is look at the next tile
+				   and do this until you reach the top of the board of another tile */
+				for(var j=0; j < tileIndex % 4; j++) {
+					/* check to see if the tile before it is taken */
+					if(Utilities.checkItemInArray((tileIndex - (j+1)), Game.squaresFilled)) {
+						/* make move falsde only if the object already isn't set to move */
+						if(!move) {
+							move = false;
+						}
+						/* index is already occupied, exit loop */
+						continue;
+					} else {
+						/* space is not occupied, square is allowed to move here */
+						move = true;
+						moveIndex = tileIndex - (j+1);
+					}
+				}
 			}
-			//console.log("about to move index: "+Game.tiles[i].index+" to" + tileIndex); 
+			 
 			/* move the tile to its new space */
-			Game.moveTile(Game.tiles[i].group, tileIndex);
+			if(move) {console.log("about to move index: "+Game.tiles[i].index+" to" + moveIndex);
+				/* update the arrays to keep track of filled and unfilled tile spaces */
+				Game.squaresFilled.push(moveIndex);
+				Game.squaresFilled.splice(Game.squaresFilled.indexOf(tileIndex), 1);
+				Game.squaresEmpty.splice(Game.squaresEmpty.indexOf(moveIndex), 1);
+				Game.squaresEmpty.push(tileIndex);
+				/* sort the arrays */ 
+				Game.squaresFilled.sort(function(a, b) { return a - b; });
+				Game.squaresEmpty.sort(function(a, b) { return a - b; });
+				Game.moveTile(Game.tiles[i], moveIndex);
+			}
 		}
-		setTimeout(function() {
-			Game.generateRandomTile();
-		}, 1000);
+		
+		Game.generateRandomTile();
+		
 	},
 	
 	moveDown: function() {
@@ -209,23 +242,14 @@ var Game = {
 		Game.generateRandomTile();
 	},
 	
-	moveTile: function(tileGroup, moveIndex) {console.log(tileGroup.find('.tile'));
-		var tween = new Kinetic.Tween({
-			node: tileGroup.find('.tile'), 
-			x: Game.grid[moveIndex].x,
-			y: Game.grid[moveIndex].y,
-			easing: Kinetic.Easings['ElasticEaseOut'],
-			duration: 2
-		});
-		tween.play();
-		tween = new Kinetic.Tween({
-			node: tileGroup.find('.text'), 
-			x: Game.grid[moveIndex].x,
-			y: Game.grid[moveIndex].y,
-			easing: Kinetic.Easings['ElasticOut'],
-			duration: 1
-		});
-		tween.play();
+	moveTile: function(tile, moveIndex) {console.log(tile);
+		var anim = new Kinetic.Animation(function(frame) {
+			tile.tile.setX(Game.grid[moveIndex].x);
+			tile.tile.setY(Game.grid[moveIndex].y);
+			tile.text.setX(Game.grid[moveIndex].x);
+			tile.text.setY(Game.grid[moveIndex].y);
+		}, Game.tileLayer);
+		anim.start()
 	},
 	
 	showScore: function() {
@@ -240,15 +264,26 @@ var Utilities = {
 		for(var i=0; i<tileArray.length; i++) {
 			indexList.push(tileArray[i].index);	
 		};
-		indexList.sort();
+		indexList.sort(function (a, b) { return a - b });
 		
 		var sortedArray = new Array();
 		for(var i=0; i<tileArray.length; i++) {
 			sortedArray.push({	
+				tile: Game.tiles[i].tile,
+				text: Game.tiles[i].text,
 				value: tileArray[i].value, 
 				index: indexList[i]
 			});
 		}
 		return sortedArray;
+	},
+	
+	checkItemInArray: function(item, array) {
+		for(var i=0; i<array.length; i++) {
+			if(array[i] === item) {
+				return true
+			}
+		}
+		return false;
 	}
 };
