@@ -34,7 +34,7 @@ var Game = {
 		Game.createGrid();
 		Game.activateButtonListeners();
 		/* instantiate the arrays that will be used to keep track of which boxes are filled or empty */
-		Game.initCheckArrays();
+		Game.initArrays();
 		Game.initLayers();
 		Game.start();
 	},
@@ -58,20 +58,9 @@ var Game = {
 		$(document).keydown(function(event){
 			event.preventDefault();
 			
-			/* sort the tiles array */
-			Game.tiles = Utilities.sortTileArray(Game.tiles);
-			
 			/* Up arrow pressed */
 			if(event.which === 38) {
 				Game.moveUp();
-				console.log('squares filled: ');
-				for(var i=0; i<Game.squaresFilled.length; i++) {
-					console.log(Game.squaresFilled[i]);
-				}
-				console.log('squares empty: ');
-				for(var i=0; i<Game.squaresEmpty.length; i++) {
-					console.log(Game.squaresEmpty[i]);
-				}
 			}
 			
 			/* Down arrow pressed */
@@ -171,6 +160,13 @@ var Game = {
 		group.add(text);
 		Game.tiles.push({tile: square, text: text, value: squareValue, index: randEmptyValue});
 		
+		/* sort the tiles array */
+		Game.tiles = Utilities.sortTileArray(Game.tiles);
+		
+		/* sort the arrays */ 
+		Game.squaresFilled.sort(function(a, b) { return a - b; });
+		Game.squaresEmpty.sort(function(a, b) { return a - b; });
+		
 		Game.tileLayer.add(group);
 		Game.stage.add(Game.tileLayer);
 	},
@@ -213,7 +209,10 @@ var Game = {
 			}
 			 
 			/* move the tile to its new space */
-			if(move) {console.log("about to move index: "+Game.tiles[i].index+" to" + moveIndex);
+			if(move) {
+				/* update the tiles index */
+				Game.tiles[i].index = moveIndex;
+				
 				/* update the arrays to keep track of filled and unfilled tile spaces */
 				Game.squaresFilled.push(moveIndex);
 				Game.squaresFilled.splice(Game.squaresFilled.indexOf(tileIndex), 1);
@@ -222,11 +221,12 @@ var Game = {
 				/* sort the arrays */ 
 				Game.squaresFilled.sort(function(a, b) { return a - b; });
 				Game.squaresEmpty.sort(function(a, b) { return a - b; });
-				Game.moveTile(Game.tiles[i], moveIndex);
+				Game.moveTile(i, moveIndex);
 			}
 		}
-		
-		Game.generateRandomTile();
+		setTimeout(function() {
+			Game.generateRandomTile();
+		}, 250);
 		
 	},
 	
@@ -242,14 +242,23 @@ var Game = {
 		Game.generateRandomTile();
 	},
 	
-	moveTile: function(tile, moveIndex) {console.log(tile);
-		var anim = new Kinetic.Animation(function(frame) {
-			tile.tile.setX(Game.grid[moveIndex].x);
-			tile.tile.setY(Game.grid[moveIndex].y);
-			tile.text.setX(Game.grid[moveIndex].x);
-			tile.text.setY(Game.grid[moveIndex].y);
-		}, Game.tileLayer);
-		anim.start()
+	moveTile: function(tileIndex, moveIndex) {
+		var tween = new Kinetic.Tween({
+			node: Game.tiles[tileIndex].text, 
+			x: Game.grid[moveIndex].x,
+			y: Game.grid[moveIndex].y,
+			easing: Kinetic.Easings['StrongEaseOut'],
+			duration: .25
+        });
+		tween.play();
+		tween = new Kinetic.Tween({
+			node: Game.tiles[tileIndex].tile, 
+			x: Game.grid[moveIndex].x,
+			y: Game.grid[moveIndex].y,
+			easing: Kinetic.Easings['StrongEaseOut'],
+			duration: .25
+        });
+		tween.play();
 	},
 	
 	showScore: function() {
@@ -258,22 +267,26 @@ var Game = {
 };
 
 var Utilities = {
+	//this is a very messy function, should be cleaned up and optimized
 	sortTileArray: function(tileArray) {
-		/* add index values into array */
+		var sortedArray = new Array();
 		var indexList = new Array();
 		for(var i=0; i<tileArray.length; i++) {
-			indexList.push(tileArray[i].index);	
-		};
-		indexList.sort(function (a, b) { return a - b });
+			indexList.push(tileArray[i].index);
+		}
+		indexList.sort(function(a, b) { return a - b; });
 		
-		var sortedArray = new Array();
 		for(var i=0; i<tileArray.length; i++) {
-			sortedArray.push({	
-				tile: Game.tiles[i].tile,
-				text: Game.tiles[i].text,
-				value: tileArray[i].value, 
-				index: indexList[i]
-			});
+			var tile;
+			var currIndex = indexList[i];
+			/* loop to find the index in tile array map that matches the current index */
+			for(var j=0; j<tileArray.length; j++) {
+				if(tileArray[j].index === currIndex) {
+					tile = tileArray[i];
+				}
+			}
+			/* add the tile to the sorted array */
+			sortedArray.push(tile);
 		}
 		return sortedArray;
 	},
