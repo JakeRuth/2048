@@ -80,7 +80,7 @@ var Game = {
 		});
 	},
 	
-	initCheckArrays: function() {
+	initArrays: function() {
 		/* loop through the arrays and initialize them all */
 		for(var i=0; i<MAX_TILES; i++) {
 			Game.squaresEmpty.push(i);
@@ -199,7 +199,7 @@ var Game = {
 							move = false;
 						}
 						/* index is already occupied, exit loop */
-						continue;
+						break;
 					} else {
 						/* space is not occupied, square is allowed to move here */
 						move = true;
@@ -226,20 +226,208 @@ var Game = {
 		}
 		setTimeout(function() {
 			Game.generateRandomTile();
-		}, 250);
-		
+		}, 150);
 	},
 	
 	moveDown: function() {
-		Game.generateRandomTile();
+		/* loop through the tiles starting from the bottom right of the grid and traverse up
+		   sliding the tiles up if necessary */
+		var tileIndex, moveIndex;
+		for(var i=Game.tiles.length - 1; i>=0; i--) {
+			var move;
+			tileIndex = Game.tiles[i].index;
+			/* if the tile is in the bottom row do nothing */
+			if(tileIndex % 4 === 3) {
+				move = false;
+			} else {
+				/* find the index of the bottom most tile of this row */
+				var bottomTileIndex;
+				//tile is in 1st collumn
+				if(tileIndex < 3) { bottomTileIndex = 3; }
+				//tile is in 2nd collumn
+				else if(tileIndex < 7) { bottomTileIndex = 7; }
+				//tile is in 3rd collumn
+				else if(tileIndex < 11) { bottomTileIndex = 11; }
+				//tile is in last collumn
+				else { bottomTileIndex = 15; }
+				
+				/* check to see if the tile before it is free, if it is look at the next tile
+				   and do this until you reach the top of the boarder of another tile */
+				for(var j=tileIndex; j < bottomTileIndex; j++) {
+					/* check to see if the tile before it is taken */
+					if(Utilities.checkItemInArray((j + 1), Game.squaresFilled)) {
+						/* make move false only if the object already isn't set to move */
+						if(!move) {
+							move = false;
+						}
+						/* index is already occupied, exit loop */
+						break;
+					} else {
+						/* space is not occupied, square is allowed to move here */
+						move = true;
+						moveIndex = j + 1;
+					}
+				}
+			}
+			 
+			/* move the tile to its new space */
+			if(move) {
+				/* update the tiles index */
+				Game.tiles[i].index = moveIndex;
+				
+				/* update the arrays to keep track of filled and unfilled tile spaces */
+				Game.squaresFilled.push(moveIndex);
+				Game.squaresFilled.splice(Game.squaresFilled.indexOf(tileIndex), 1);
+				Game.squaresEmpty.splice(Game.squaresEmpty.indexOf(moveIndex), 1);
+				Game.squaresEmpty.push(tileIndex);
+				/* sort the arrays */ 
+				Game.squaresFilled.sort(function(a, b) { return a - b; });
+				Game.squaresEmpty.sort(function(a, b) { return a - b; });
+				Game.moveTile(i, moveIndex);
+			}
+		}
+		setTimeout(function() {
+			Game.generateRandomTile();
+		}, 150);
 	},
 	
 	moveRight: function() {
-		Game.generateRandomTile();
+		/* loop through the tiles starting from the top left of the grid and traverse right
+		   sliding the tiles right if necessary */
+		var tileIndex, moveIndex;
+		
+		/* create a loop to increase index as follows :
+		 * 0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15
+		 *
+		 * The bottom of the loop has more loop logic
+		 */
+		var move;
+		for(var i=Game.tiles.length - 1; i >= 0; i--) {
+			move = false;
+			tileIndex = Game.tiles[i].index;
+			/* if the tile is in the right collumn do nothing */
+			if(tileIndex > 11) {
+				move = false;
+			} else {
+				/* find the index of the bottom most tile of this row */
+				var rightTileIndex;
+				//tile is in 1st row
+				if(tileIndex % 4 === 0) { rightTileIndex = 12; }
+				//tile is in 2nd row
+				else if(tileIndex % 4 === 1) { rightTileIndex = 13; }
+				//tile is in 3rd row
+				else if(tileIndex % 4 === 2) { rightTileIndex = 14; }
+				//tile is in last row
+				else if(tileIndex % 4 === 3) { rightTileIndex = 15; }
+				
+				/* check to see if the tile before it is free, if it is look at the next tile
+				   and do this until you reach the top of the board of another tile */
+				for(var j=tileIndex; j < rightTileIndex; j+=4) {
+					/* check to see if the tile before it is taken */
+					if(Utilities.checkItemInArray((j + 4), Game.squaresFilled)) {
+						/* make move falsde only if the object already isn't set to move */
+						if(!move) {
+							move = false;
+						}
+						/* index is already occupied, exit loop */
+						break;
+					} else {
+						/* space is not occupied, square is allowed to move here */
+						move = true;
+						moveIndex = j + 4;
+					}
+				}
+			}
+			 
+			/* move the tile to its new space */
+			if(move) {
+				/* update the tiles index */
+				Game.tiles[i].index = moveIndex;
+				
+				/* update the arrays to keep track of filled and unfilled tile spaces */
+				Game.squaresFilled.push(moveIndex);
+				Game.squaresFilled.splice(Game.squaresFilled.indexOf(tileIndex), 1);
+				Game.squaresEmpty.splice(Game.squaresEmpty.indexOf(moveIndex), 1);
+				Game.squaresEmpty.push(tileIndex);
+				/* sort the arrays */ 
+				Game.squaresFilled.sort(function(a, b) { return a - b; });
+				Game.squaresEmpty.sort(function(a, b) { return a - b; });
+				Game.moveTile(i, moveIndex);
+			}
+		}
+		setTimeout(function() {
+			Game.generateRandomTile();
+		}, 150);
 	},
 	
 	moveLeft: function() {
-		Game.generateRandomTile();
+		/* loop through the tiles starting from the top left of the grid and traverse right
+		   sliding the tiles right if necessary */
+		var tileIndex, moveIndex;
+		
+		/* create a loop to increase index as follows :
+		 * 0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15
+		 *
+		 * The bottom of the loop has more loop logic
+		 */
+		var move;
+		for(var i=0; i < Game.tiles.length; i++) {
+			move = false;
+			tileIndex = Game.tiles[i].index;
+			
+			/* if the tile is in the left row do nothing */
+			if(tileIndex < 4) {
+				move=false;
+			} else {console.log("going to try to move tile: "+tileIndex);
+				/* find the index of the bottom most tile of this row */
+				var leftTileIndex;
+				//tile is in 1st row
+				if(tileIndex % 4 === 0) { leftTileIndex = 0; }
+				//tile is in 2nd row
+				else if(tileIndex % 4 === 1) { leftTileIndex = 1; }
+				//tile is in 3rd row
+				else if(tileIndex % 4 === 2) { leftTileIndex = 2; }
+				//tile is in last row
+				else if(tileIndex % 4 === 3) { leftTileIndex = 3; }
+				
+				/* check to see if the tile before it is free, if it is look at the next tile
+				   and do this until you reach the top of the board of another tile */
+				for(var j=tileIndex; j > leftTileIndex; j-=4) {
+					/* check to see if the tile before it is taken */
+					if(Utilities.checkItemInArray((j - 4), Game.squaresFilled)) {
+						/* make move falsde only if the object already isn't set to move */
+						if(!move) {
+							move = false;
+						}
+						/* index is already occupied, exit loop */
+						break;
+					} else {console.log('going to move it to at least: '+(j-4));
+						/* space is not occupied, square is allowed to move here */
+						move = true;
+						moveIndex = j - 4;
+					}
+				}
+			}
+			 
+			/* move the tile to its new space */
+			if(move) {console.log('moving tile: '+tileIndex+' to: '+moveIndex);
+				/* update the tiles index */
+				Game.tiles[i].index = moveIndex;
+				
+				/* update the arrays to keep track of filled and unfilled tile spaces */
+				Game.squaresFilled.push(moveIndex);
+				Game.squaresFilled.splice(Game.squaresFilled.indexOf(tileIndex), 1);
+				Game.squaresEmpty.splice(Game.squaresEmpty.indexOf(moveIndex), 1);
+				Game.squaresEmpty.push(tileIndex);
+				/* sort the arrays */ 
+				Game.squaresFilled.sort(function(a, b) { return a - b; });
+				Game.squaresEmpty.sort(function(a, b) { return a - b; });
+				Game.moveTile(i, moveIndex);
+			}
+		}
+		setTimeout(function() {
+			Game.generateRandomTile();
+		}, 150);
 	},
 	
 	moveTile: function(tileIndex, moveIndex) {
@@ -248,7 +436,7 @@ var Game = {
 			x: Game.grid[moveIndex].x,
 			y: Game.grid[moveIndex].y,
 			easing: Kinetic.Easings['StrongEaseOut'],
-			duration: .25
+			duration: .15
         });
 		tween.play();
 		tween = new Kinetic.Tween({
@@ -256,7 +444,7 @@ var Game = {
 			x: Game.grid[moveIndex].x,
 			y: Game.grid[moveIndex].y,
 			easing: Kinetic.Easings['StrongEaseOut'],
-			duration: .25
+			duration: .15
         });
 		tween.play();
 	},
@@ -282,7 +470,8 @@ var Utilities = {
 			/* loop to find the index in tile array map that matches the current index */
 			for(var j=0; j<tileArray.length; j++) {
 				if(tileArray[j].index === currIndex) {
-					tile = tileArray[i];
+					tile = tileArray[j];
+					break;
 				}
 			}
 			/* add the tile to the sorted array */
