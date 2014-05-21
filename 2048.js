@@ -28,8 +28,11 @@ var Game = {
 	squaresFilled: new Array(),
 	squaresEmpty: new Array(),
 	tiles: new Array(),
+	gameIsNotOver: null,
 	
 	init: function() {
+		Game.gameIsNotOver = true;
+		
 		/* create the stage */
 		Game.stage = new Kinetic.Stage({container: 'game', width: STAGE_WIDTH, height: STAGE_HEIGHT});
 		Game.createGrid();
@@ -57,36 +60,44 @@ var Game = {
 	
 	activateButtonListeners: function() {
 		$(document).keydown(function(event){
+			/* the game is over if all the tiles are filled */
+			if(Game.tiles.length === MAX_TILES) {
+				Game.gameIsNotOver = false;
+				Game.showScore();
+			}
+		
 			event.preventDefault();
 			
-			/* Up arrow pressed */
-			if(event.which === 38) {
-				Game.moveUp();
-				Game.moveUpCombine();
+			if(Game.gameIsNotOver) {
+				/* Up arrow pressed */
+				if(event.which === 38) {
+					Game.moveUp();
+					Game.moveUpCombine();
+				}
+				
+				/* Down arrow pressed */
+				if(event.which === 40) {
+					Game.moveDown();
+					Game.moveDownCombine();
+				}
+				
+				/* Right arrow pressed */
+				if(event.which === 39) {
+					Game.moveRight();
+					Game.moveRightCombine();
+				}
+				
+				/* Left arrow pressed */
+				if(event.which === 37) {
+					Game.moveLeft();
+					Game.moveLeftCombine();
+				}
+				
+				/* generate a random tile */				
+				setTimeout(function() {
+					Game.generateRandomTile();
+				}, 30);
 			}
-			
-			/* Down arrow pressed */
-			if(event.which === 40) {
-				Game.moveDown();
-				Game.moveDownCombine();
-			}
-			
-			/* Right arrow pressed */
-			if(event.which === 39) {
-				Game.moveRight();
-				Game.moveRightCombine();
-			}
-			
-			/* Left arrow pressed */
-			if(event.which === 37) {
-				Game.moveLeft();
-				Game.moveLeftCombine();
-			}
-			
-			/* generate a random tile */				
-			setTimeout(function() {
-				Game.generateRandomTile();
-			}, 100);
 		});
 	},
 	
@@ -124,11 +135,6 @@ var Game = {
 	},
 
 	generateRandomTile: function() {
-		/* the game is over if all the tiles are filled */
-		if(Game.tiles.length === MAX_TILES) {
-			Game.showScore();
-		}
-		
 		/* generate a random location for the tile to generate where there is no tile already */
 		var randIndex = Math.floor(Math.random() * Game.squaresEmpty.length )
 		var randEmptyValue = Game.squaresEmpty[randIndex];
@@ -439,7 +445,7 @@ var Game = {
 			x: Game.grid[moveIndex].x,
 			y: Game.grid[moveIndex].y,
 			easing: Kinetic.Easings['StrongEaseOut'],
-			duration: .1
+			duration: .03
         });
 		tween.play();
 		tween = new Kinetic.Tween({
@@ -447,7 +453,7 @@ var Game = {
 			x: Game.grid[moveIndex].x,
 			y: Game.grid[moveIndex].y,
 			easing: Kinetic.Easings['StrongEaseOut'],
-			duration: .1
+			duration: .03
         });
 		tween.play();
 	},
