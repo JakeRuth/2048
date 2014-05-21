@@ -8,6 +8,7 @@
  
 /* Globals */
 var MAX_TILES = 16;
+var WINNING_VALUE = 8192;
 var SQUARE_SIZE = 115;
 var SQUARE_MARGIN = 8; //(500 - (115 * 4) / 4)
 var STAGE_HEIGHT = 500;
@@ -61,22 +62,31 @@ var Game = {
 			/* Up arrow pressed */
 			if(event.which === 38) {
 				Game.moveUp();
+				Game.moveUpCombine();
 			}
 			
 			/* Down arrow pressed */
 			if(event.which === 40) {
 				Game.moveDown();
+				Game.moveDownCombine();
 			}
 			
 			/* Right arrow pressed */
 			if(event.which === 39) {
 				Game.moveRight();
+				Game.moveRightCombine();
 			}
 			
 			/* Left arrow pressed */
 			if(event.which === 37) {
 				Game.moveLeft();
+				Game.moveLeftCombine();
 			}
+			
+			/* generate a random tile */				
+			setTimeout(function() {
+				Game.generateRandomTile();
+			}, 100);
 		});
 	},
 	
@@ -114,6 +124,11 @@ var Game = {
 	},
 
 	generateRandomTile: function() {
+		/* the game is over if all the tiles are filled */
+		if(Game.tiles.length === MAX_TILES) {
+			Game.showScore();
+		}
+		
 		/* generate a random location for the tile to generate where there is no tile already */
 		var randIndex = Math.floor(Math.random() * Game.squaresEmpty.length )
 		var randEmptyValue = Game.squaresEmpty[randIndex];
@@ -194,7 +209,7 @@ var Game = {
 				for(var j=0; j < tileIndex % 4; j++) {
 					/* check to see if the tile before it is taken */
 					if(Utilities.checkItemInArray((tileIndex - (j+1)), Game.squaresFilled)) {
-						/* make move falsde only if the object already isn't set to move */
+						/* make move false only if the object already isn't set to move */
 						if(!move) {
 							move = false;
 						}
@@ -224,9 +239,6 @@ var Game = {
 				Game.moveTile(i, moveIndex);
 			}
 		}
-		setTimeout(function() {
-			Game.generateRandomTile();
-		}, 150);
 	},
 	
 	moveDown: function() {
@@ -286,9 +298,6 @@ var Game = {
 				Game.moveTile(i, moveIndex);
 			}
 		}
-		setTimeout(function() {
-			Game.generateRandomTile();
-		}, 150);
 	},
 	
 	moveRight: function() {
@@ -325,7 +334,7 @@ var Game = {
 				for(var j=tileIndex; j < rightTileIndex; j+=4) {
 					/* check to see if the tile before it is taken */
 					if(Utilities.checkItemInArray((j + 4), Game.squaresFilled)) {
-						/* make move falsde only if the object already isn't set to move */
+						/* make move false only if the object already isn't set to move */
 						if(!move) {
 							move = false;
 						}
@@ -355,9 +364,6 @@ var Game = {
 				Game.moveTile(i, moveIndex);
 			}
 		}
-		setTimeout(function() {
-			Game.generateRandomTile();
-		}, 150);
 	},
 	
 	moveLeft: function() {
@@ -378,7 +384,7 @@ var Game = {
 			/* if the tile is in the left row do nothing */
 			if(tileIndex < 4) {
 				move=false;
-			} else {console.log("going to try to move tile: "+tileIndex);
+			} else {
 				/* find the index of the bottom most tile of this row */
 				var leftTileIndex;
 				//tile is in 1st row
@@ -395,13 +401,13 @@ var Game = {
 				for(var j=tileIndex; j > leftTileIndex; j-=4) {
 					/* check to see if the tile before it is taken */
 					if(Utilities.checkItemInArray((j - 4), Game.squaresFilled)) {
-						/* make move falsde only if the object already isn't set to move */
+						/* make move false only if the object already isn't set to move */
 						if(!move) {
 							move = false;
 						}
 						/* index is already occupied, exit loop */
 						break;
-					} else {console.log('going to move it to at least: '+(j-4));
+					} else {
 						/* space is not occupied, square is allowed to move here */
 						move = true;
 						moveIndex = j - 4;
@@ -410,7 +416,7 @@ var Game = {
 			}
 			 
 			/* move the tile to its new space */
-			if(move) {console.log('moving tile: '+tileIndex+' to: '+moveIndex);
+			if(move) {
 				/* update the tiles index */
 				Game.tiles[i].index = moveIndex;
 				
@@ -425,9 +431,6 @@ var Game = {
 				Game.moveTile(i, moveIndex);
 			}
 		}
-		setTimeout(function() {
-			Game.generateRandomTile();
-		}, 150);
 	},
 	
 	moveTile: function(tileIndex, moveIndex) {
@@ -436,7 +439,7 @@ var Game = {
 			x: Game.grid[moveIndex].x,
 			y: Game.grid[moveIndex].y,
 			easing: Kinetic.Easings['StrongEaseOut'],
-			duration: .15
+			duration: .1
         });
 		tween.play();
 		tween = new Kinetic.Tween({
@@ -444,9 +447,83 @@ var Game = {
 			x: Game.grid[moveIndex].x,
 			y: Game.grid[moveIndex].y,
 			easing: Kinetic.Easings['StrongEaseOut'],
-			duration: .15
+			duration: .1
         });
 		tween.play();
+	},
+	
+	moveUpCombine: function() {
+		/* loop through the tiles and combine two tiles if they have the same value */
+		for(var i=0; i<Game.tiles.length - 1; i++) {
+			var currTile = Game.tiles[i];
+			/* if there is another tile, get at it and store it */
+			var nextTile = Game.tiles[i+1] ? Game.tiles[i+1] : null;
+			
+			/* check to see it the two tiles should be combined, only if they are in the same collumn */
+			if((nextTile) && (nextTile.index % 4 !== 0)) {
+				/* if the two tiles have the same value and are adjacent to each other, combine them */
+				if((currTile.index === (nextTile.index - 1)) && (currTile.value === nextTile.value)) {
+					
+					/* destroy the next tile from the game */
+					var indexOfTileToRemove = Game.tiles.indexOf(nextTile);
+					Game.tiles[indexOfTileToRemove].tile.destroy();
+					Game.tiles[indexOfTileToRemove].text.destroy();
+					Game.tiles.splice(indexOfTileToRemove, 1);
+					
+					Utilities.updateArrays();
+					
+					/* update the tiles value */
+					var newColorIndex = Utilities.getNextColor(Game.tiles[i].value);
+					Game.tiles[i].tile.setAttr('fill', COLORS[newColorIndex]);
+					var newTileValue = Game.tiles[i].value * 2;
+					Game.tiles[i].text.setAttr('text', newTileValue);
+					Game.tiles[i].value = newTileValue;
+					
+					/* if there are other tiles in that row, move them up to the next available space */
+					var searchUntilIndex = currTile.index < 3  ? 3
+									     : currTile.index < 7  ? 7
+									     : currTile.index < 11 ? 11
+									     : currTile.index < 15 ? 15
+									     : null;
+					var moveToIndex = currTile.index + 1;
+					
+					for(var j=indexOfTileToRemove; j<Game.tiles.length; j++) {
+						var tile = Game.tiles[j];
+						
+						/* if the tile is within the move range, move it to the next available space */
+						if(tile.index <= searchUntilIndex) {
+							Game.moveTile(j, moveToIndex);
+
+							/* update the index of the moved tile */
+							Game.tiles[j].index = moveToIndex;
+							
+							/* update arrays */
+							Utilities.updateArrays();
+							
+							/* sort the arrays(not necessary but here for safety) */
+							Game.squaresFilled.sort(function(a, b) { return a - b; });
+							Game.squaresEmpty.sort(function(a, b) { return a - b; });
+							moveToIndex++;
+						} else {
+							break;
+						}
+					}
+					
+				}
+			}
+		}
+	},
+	
+	moveDownCombine: function() {
+	
+	},
+	
+	moveRightCombine: function() {
+	
+	},
+	
+	moveLeftCombine: function() {
+	
 	},
 	
 	showScore: function() {
@@ -487,5 +564,35 @@ var Utilities = {
 			}
 		}
 		return false;
+	},
+	
+	getNextColor: function(value) {
+		var colorIndex;
+		var powersOfTwo = 2;
+		
+		for(var i=1; i<COLORS.length; i++) {
+			if(value === powersOfTwo) {
+				return i;
+			}
+			
+			powersOfTwo = powersOfTwo * powersOfTwo;
+		}
+		
+		return colorIndex;
+	},
+	
+	updateArrays: function() {
+		Game.squaresFilled = new Array();
+		Game.squaresEmpty = new Array();
+		
+		j=0;
+		for(var i=0; i<MAX_TILES; i++) {
+			if((Game.tiles[j]) && (Game.tiles[j].index === i)) {
+				Game.squaresFilled.push(i);
+				j++;
+			} else {
+				Game.squaresEmpty.push(i);
+			}
+		}
 	}
 };
