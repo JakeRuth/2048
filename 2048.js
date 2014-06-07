@@ -458,6 +458,25 @@ var Game = {
 		tween.play();
 	},
 	
+	moveTileCustom: function(tileIndex, moveIndex, array) {
+		var tween = new Kinetic.Tween({
+			node: array[tileIndex].text, 
+			x: Game.grid[moveIndex].x,
+			y: Game.grid[moveIndex].y,
+			easing: Kinetic.Easings['StrongEaseOut'],
+			duration: .03
+        });
+		tween.play();
+		tween = new Kinetic.Tween({
+			node: array[tileIndex].tile, 
+			x: Game.grid[moveIndex].x,
+			y: Game.grid[moveIndex].y,
+			easing: Kinetic.Easings['StrongEaseOut'],
+			duration: .03
+        });
+		tween.play();
+	},
+	
 	moveUpCombine: function() {
 		Game.tiles = Utilities.sortTileArray(Game.tiles);
 	
@@ -593,7 +612,7 @@ var Game = {
 		Game.tiles = Utilities.sortTileArray(Game.tiles);
 		
 		/* create a modified game tile array to loop through so that the order
-		 * of the tiles reads right to left, top to bottom */
+		 * of the tiles reads left to right, top to bottom */
 		var modifiedGameTiles = new Array(),
 			modulus = 3;
 			
@@ -606,64 +625,64 @@ var Game = {
 			
 			modulus--;
 		}
-		for(var m=0; m<Game.tiles.length; m++) {
-			console.log('Game tiles index: '+Game.tiles[m].index);
-		}
-		for(var m=0; m<Game.tiles.length; m++) {
-			console.log('mod tiles index: '+modifiedGameTiles[m].index);
-		}
 	
 		/* loop through the tiles and combine two tiles if they have the same value */
-		for(var i=Game.tiles.length - 1; i>=0; i--) {
-			var currTile = Game.tiles[i];
+		for(var i=0; i < modifiedGameTiles.length; i++) {
+			var currTile = modifiedGameTiles[i];
 			/* if there is another tile, get at it and store it */
-			var nextTile = Game.tiles[i+1] ? Game.tiles[i+1] : null;
+			var nextTile = modifiedGameTiles[i+1] ? modifiedGameTiles[i+1] : null;
 			
-			/* check to see it the two tiles should be combined, only if they are in the same collumn */
-			if((nextTile) && (nextTile.index % 4 !== 0)) {
+			/* check to see if the two tiles should be combined, only if they are in the same row */
+			if((nextTile) && (nextTile.index < 12)) {
 				/* if the two tiles have the same value and are adjacent to each other, combine them */
-				if((currTile.index === (nextTile.index - 1)) && (currTile.value === nextTile.value)) {
+				if(((currTile.index % 4) === (nextTile.index % 4)) && (currTile.value === nextTile.value)) {
 					
 					/* destroy the next tile from the game */
-					var indexOfTileToRemove = Game.tiles.indexOf(nextTile);
-					Game.tiles[indexOfTileToRemove].tile.destroy();
-					Game.tiles[indexOfTileToRemove].text.destroy();
-					Game.tiles.splice(indexOfTileToRemove, 1);
+					var indexOfTileToRemove = modifiedGameTiles.indexOf(nextTile);
+					modifiedGameTiles[indexOfTileToRemove].tile.destroy();
+					modifiedGameTiles[indexOfTileToRemove].text.destroy();
+					modifiedGameTiles.splice(indexOfTileToRemove, 1);
+					Game.tiles = modifiedGameTiles;
 					
+					Game.tiles = Utilities.sortTileArray(Game.tiles);
 					Utilities.updateArrays();
 					
 					/* update the tiles value */
-					var newColorIndex = Utilities.getNextColor(Game.tiles[i].value);
-					Game.tiles[i].tile.setAttr('fill', COLORS[newColorIndex]);
-					var newTileValue = Game.tiles[i].value * 2;
-					Game.tiles[i].text.setAttr('text', newTileValue);
-					Game.tiles[i].value = newTileValue;
+					var newColorIndex = Utilities.getNextColor(modifiedGameTiles[i].value);
+					modifiedGameTiles[i].tile.setAttr('fill', COLORS[newColorIndex]);
+					var newTileValue = modifiedGameTiles[i].value * 2;
+					modifiedGameTiles[i].text.setAttr('text', newTileValue);
+					modifiedGameTiles[i].value = newTileValue;
+					Game.tiles = modifiedGameTiles;
+					Game.tiles = Utilities.sortTileArray(Game.tiles);
 					
 					/* if there are other tiles in that row, move them up to the next available space */
-					var searchUntilIndex = currTile.index < 3  ? 3
-									     : currTile.index < 7  ? 7
-									     : currTile.index < 11 ? 11
-									     : currTile.index < 15 ? 15
+					var searchWithinModulusIndex = currTile.index % 4 === 3 ? 3
+									     : currTile.index % 4 === 2 ? 2
+									     : currTile.index % 4 === 1 ? 1
+									     : currTile.index % 4 === 0 ? 0
 									     : null;
-					var moveToIndex = currTile.index + 1;
+					var moveToIndex = currTile.index - 4;
 					
-					for(var j=indexOfTileToRemove; j<Game.tiles.length; j++) {
-						var tile = Game.tiles[j];
+					for(var j=indexOfTileToRemove; j<modifiedGameTiles.length; j++) {
+						var tile = modifiedGameTiles[j];
 						
 						/* if the tile is within the move range, move it to the next available space */
-						if(tile.index <= searchUntilIndex) {
-							Game.moveTile(j, moveToIndex);
+						if(tile.index % 4 === searchWithinModulusIndex) {
+							Game.moveTileCustom(j, moveToIndex, modifiedGameTiles);
 
 							/* update the index of the moved tile */
-							Game.tiles[j].index = moveToIndex;
+							modifiedGameTiles[j].index = moveToIndex;
 							
 							/* update arrays */
+							Game.tiles = modifiedGameTiles;
+							Game.tiles = Utilities.sortTileArray(Game.tiles);
 							Utilities.updateArrays();
 							
 							/* sort the arrays(not necessary but here for safety) */
 							Game.squaresFilled.sort(function(a, b) { return a - b; });
 							Game.squaresEmpty.sort(function(a, b) { return a - b; });
-							moveToIndex++;
+							moveToIndex-=4;
 						} else {
 							break;
 						}
@@ -727,7 +746,7 @@ var Utilities = {
 				return i;
 			}
 			
-			powersOfTwo = powersOfTwo * powersOfTwo;
+			powersOfTwo = powersOfTwo * 2;
 		}
 		
 		return colorIndex;
