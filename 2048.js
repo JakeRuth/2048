@@ -62,7 +62,7 @@ var Game = {
 		$(document).keydown(function(event){
 			/* the game is over if all the tiles are filled */
 			if(Game.tiles.length === MAX_TILES) {
-				Game.gameIsNotOver = false;
+				//Game.gameIsNotOver = false;
 				Game.showScore();
 			}
 		
@@ -324,7 +324,7 @@ var Game = {
 			if(tileIndex > 11) {
 				move = false;
 			} else {
-				/* find the index of the bottom most tile of this row */
+				/* find the index of the right most tile of this row */
 				var rightTileIndex;
 				//tile is in 1st row
 				if(tileIndex % 4 === 0) { rightTileIndex = 12; }
@@ -459,6 +459,8 @@ var Game = {
 	},
 	
 	moveUpCombine: function() {
+		Game.tiles = Utilities.sortTileArray(Game.tiles);
+	
 		/* loop through the tiles and combine two tiles if they have the same value */
 		for(var i=0; i<Game.tiles.length - 1; i++) {
 			var currTile = Game.tiles[i];
@@ -521,15 +523,159 @@ var Game = {
 	},
 	
 	moveDownCombine: function() {
-	
+		Game.tiles = Utilities.sortTileArray(Game.tiles);
+		
+		/* loop through the tiles and combine two tiles if they have the same value */
+		for(var i=Game.tiles.length - 1; i>=0; i--) {
+			var currTile = Game.tiles[i];
+			/* if there is another tile, get at it and store it */
+			var nextTile = Game.tiles[i-1] ? Game.tiles[i-1] : null;
+			
+			/* check to see it the two tiles should be combined, only if they are in the same collumn */
+			if((nextTile) && (nextTile.index % 4 !== 3)) {
+				/* if the two tiles have the same value and are adjacent to each other, combine them */
+				if((currTile.index === (nextTile.index + 1)) && (currTile.value === nextTile.value)) {
+
+					/* destroy the next tile from the game */
+					var indexOfTileToRemove = Game.tiles.indexOf(nextTile);
+					Game.tiles[indexOfTileToRemove].tile.destroy();
+					Game.tiles[indexOfTileToRemove].text.destroy();
+					Game.tiles.splice(indexOfTileToRemove, 1);
+					
+					/* decrement i because Game.tiles now has one less element */
+					i--;
+					
+					Utilities.updateArrays();
+					
+					/* update the tiles value */
+					var newColorIndex = Utilities.getNextColor(Game.tiles[i].value);
+					Game.tiles[i].tile.setAttr('fill', COLORS[newColorIndex]);
+					var newTileValue = Game.tiles[i].value * 2;
+					Game.tiles[i].text.setAttr('text', newTileValue);
+					Game.tiles[i].value = newTileValue;
+					
+					/* if there are other tiles in that row, move them up to the next available space */
+					var searchUntilIndex = currTile.index > 12 ? 12
+									     : currTile.index > 8  ? 8
+									     : currTile.index > 4  ? 4
+									     : currTile.index > 0  ? 0
+									     : null;
+					var moveToIndex = currTile.index - 1;
+					
+					for(var j=indexOfTileToRemove - 1; j>=0; j--) {
+						var tile = Game.tiles[j];
+						
+						/* if the tile is within the move range, move it to the next available space */
+						if(tile.index >= searchUntilIndex) {
+							Game.moveTile(j, moveToIndex);
+
+							/* update the index of the moved tile */
+							Game.tiles[j].index = moveToIndex;
+							
+							/* update arrays */
+							Utilities.updateArrays();
+							
+							/* sort the arrays(not necessary but here for safety) */
+							Game.squaresFilled.sort(function(a, b) { return a - b; });
+							Game.squaresEmpty.sort(function(a, b) { return a - b; });
+							moveToIndex--;
+						} else {
+							break;
+						}
+					}
+					
+				}
+			}
+		}
 	},
 	
 	moveRightCombine: function() {
+		Game.tiles = Utilities.sortTileArray(Game.tiles);
+		
+		/* create a modified game tile array to loop through so that the order
+		 * of the tiles reads right to left, top to bottom */
+		var modifiedGameTiles = new Array(),
+			modulus = 3;
+			
+		while(modulus >= 0) {
+			for(var k=Game.tiles.length - 1; k>=0; k--) {
+				if(Game.tiles[k].index % 4 === modulus) {
+					modifiedGameTiles.push(Game.tiles[k]);
+				}
+			}
+			
+			modulus--;
+		}
+		for(var m=0; m<Game.tiles.length; m++) {
+			console.log('Game tiles index: '+Game.tiles[m].index);
+		}
+		for(var m=0; m<Game.tiles.length; m++) {
+			console.log('mod tiles index: '+modifiedGameTiles[m].index);
+		}
 	
+		/* loop through the tiles and combine two tiles if they have the same value */
+		for(var i=Game.tiles.length - 1; i>=0; i--) {
+			var currTile = Game.tiles[i];
+			/* if there is another tile, get at it and store it */
+			var nextTile = Game.tiles[i+1] ? Game.tiles[i+1] : null;
+			
+			/* check to see it the two tiles should be combined, only if they are in the same collumn */
+			if((nextTile) && (nextTile.index % 4 !== 0)) {
+				/* if the two tiles have the same value and are adjacent to each other, combine them */
+				if((currTile.index === (nextTile.index - 1)) && (currTile.value === nextTile.value)) {
+					
+					/* destroy the next tile from the game */
+					var indexOfTileToRemove = Game.tiles.indexOf(nextTile);
+					Game.tiles[indexOfTileToRemove].tile.destroy();
+					Game.tiles[indexOfTileToRemove].text.destroy();
+					Game.tiles.splice(indexOfTileToRemove, 1);
+					
+					Utilities.updateArrays();
+					
+					/* update the tiles value */
+					var newColorIndex = Utilities.getNextColor(Game.tiles[i].value);
+					Game.tiles[i].tile.setAttr('fill', COLORS[newColorIndex]);
+					var newTileValue = Game.tiles[i].value * 2;
+					Game.tiles[i].text.setAttr('text', newTileValue);
+					Game.tiles[i].value = newTileValue;
+					
+					/* if there are other tiles in that row, move them up to the next available space */
+					var searchUntilIndex = currTile.index < 3  ? 3
+									     : currTile.index < 7  ? 7
+									     : currTile.index < 11 ? 11
+									     : currTile.index < 15 ? 15
+									     : null;
+					var moveToIndex = currTile.index + 1;
+					
+					for(var j=indexOfTileToRemove; j<Game.tiles.length; j++) {
+						var tile = Game.tiles[j];
+						
+						/* if the tile is within the move range, move it to the next available space */
+						if(tile.index <= searchUntilIndex) {
+							Game.moveTile(j, moveToIndex);
+
+							/* update the index of the moved tile */
+							Game.tiles[j].index = moveToIndex;
+							
+							/* update arrays */
+							Utilities.updateArrays();
+							
+							/* sort the arrays(not necessary but here for safety) */
+							Game.squaresFilled.sort(function(a, b) { return a - b; });
+							Game.squaresEmpty.sort(function(a, b) { return a - b; });
+							moveToIndex++;
+						} else {
+							break;
+						}
+					}
+					
+				}
+			}
+		}
 	},
 	
 	moveLeftCombine: function() {
-	
+		//Game.tiles = Utilities.sortTileArray(Game.tiles);
 	},
 	
 	showScore: function() {
