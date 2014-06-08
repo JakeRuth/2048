@@ -13,7 +13,7 @@ var SQUARE_SIZE = 115;
 var SQUARE_MARGIN = 8; //(500 - (115 * 4) / 4)
 var STAGE_HEIGHT = 500;
 var STAGE_WIDTH = 500;
-var COLORS = ['maroon','red','orangered','orange','yellow','lightgreen','green','cyan','darkcyan','blue', 'purple', 'pink', 'magenta']
+var COLORS = ['maroon','red','orangered','orange','yellow','lightgreen','green','cyan','darkcyan','blue', 'purple', 'pink', 'magenta'];
 
 $(function() {
 	Game.init();
@@ -903,10 +903,6 @@ var Game = {
 		}
 		
 		return didTilesMove;
-	},
-	
-	showScore: function() {
-	
 	}
 };
 
