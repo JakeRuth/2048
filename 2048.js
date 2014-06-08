@@ -29,6 +29,7 @@ var Game = {
 	squaresEmpty: new Array(),
 	tiles: new Array(),
 	gameIsNotOver: null,
+	totalScore: 0,
 	
 	init: function() {
 		Game.gameIsNotOver = true;
@@ -36,7 +37,8 @@ var Game = {
 		/* create the stage */
 		Game.stage = new Kinetic.Stage({container: 'game', width: STAGE_WIDTH, height: STAGE_HEIGHT});
 		Game.createGrid();
-		Game.activateButtonListeners();
+		Game.createStartButtonListeners();
+		Game.activateArrowKeyListeners();
 		/* instantiate the arrays that will be used to keep track of which boxes are filled or empty */
 		Game.initArrays();
 		Game.initLayers();
@@ -58,42 +60,70 @@ var Game = {
 		Game.grid = grid;
 	},
 	
-	activateButtonListeners: function() {
+	createStartButtonListeners: function() {
+		var button = $('.start-over');
+		
+		button.mouseenter(function() {
+			button.css('cursor', 'pointer');
+		});
+		
+		button.mouseleave(function() {
+			button.css('cursor', 'default')
+		});
+		
+		button.click(function() {
+			window.location.reload();
+		});
+	},
+	
+	activateArrowKeyListeners: function() {
 		$(document).keydown(function(event){
-			/* the game is over if all the tiles are filled */
-			if(Game.tiles.length === MAX_TILES) {
-				//Game.gameIsNotOver = false;
-				Game.showScore();
-			}
 		
 			event.preventDefault();
+			/* Up arrow pressed */
+			var generateTile = false;
 			
-			if(Game.gameIsNotOver) {
-				/* Up arrow pressed */
-				if(event.which === 38) {
-					Game.moveUp();
-					Game.moveUpCombine();
+			if(event.which === 38) {
+				if(Game.moveUp()) {
+					generateTile = true;
 				}
-				
-				/* Down arrow pressed */
-				if(event.which === 40) {
-					Game.moveDown();
-					Game.moveDownCombine();
+				if(Game.moveUpCombine()) {
+					generateTile = true;
 				}
-				
-				/* Right arrow pressed */
-				if(event.which === 39) {
-					Game.moveRight();
-					Game.moveRightCombine();
+			}
+			
+			/* Down arrow pressed */
+			if(event.which === 40) {
+				if(Game.moveDown()) {
+					generateTile = true;
 				}
-				
-				/* Left arrow pressed */
-				if(event.which === 37) {
-					Game.moveLeft();
-					Game.moveLeftCombine();
+				if(Game.moveDownCombine()) {
+					generateTile = true;
 				}
-				
-				/* generate a random tile */				
+			}
+			
+			/* Right arrow pressed */
+			if(event.which === 39) {
+				if(Game.moveRight()) {
+					generateTile = true;
+				}
+				if(Game.moveRightCombine()) {
+					generateTile = true;
+				}
+			}
+			
+			/* Left arrow pressed */
+			if(event.which === 37) {
+				if(Game.moveLeft()) {
+					generateTile = true;
+				}
+				if(Game.moveLeftCombine()) {
+					generateTile = true;
+				}
+			}
+			
+			/* generate a random tile */
+			if(generateTile) {
 				setTimeout(function() {
 					Game.generateRandomTile();
 				}, 30);
@@ -171,13 +201,19 @@ var Game = {
 		
 		var text = new Kinetic.Text({
 			x: Game.grid[randEmptyValue].x,
-			y: Game.grid[randEmptyValue].y,
-			fontSize: 33,
-			fontFamily: 'Calibri',
-			fill: 'black',
+			y: 0,
+			fontSize: 50,
+			fontFamily: 'Arial Black',
+			fill: '#D1D1D1',
+			stroke: 'black',
+			strokeWidth: 2,
+			width: SQUARE_SIZE,
+			align: 'center',
 			text: squareValue,
 			name: 'text'
 		});
+		var textY = square.getAttr('y') + ((square.getAttr('height') - text.getAttr('height')) / 2);
+		text.setAttr('y', textY)
 		group.add(text);
 		Game.tiles.push({tile: square, text: text, value: squareValue, index: randEmptyValue});
 		
@@ -200,6 +236,8 @@ var Game = {
 	},
 
 	moveUp: function() {
+		var didTilesMove = false;
+	
 		/* loop through the tiles starting from the top of the grid and traverse down
 		   sliding the tiles up if necessary */
 		var tileIndex, moveIndex;
@@ -243,11 +281,17 @@ var Game = {
 				Game.squaresFilled.sort(function(a, b) { return a - b; });
 				Game.squaresEmpty.sort(function(a, b) { return a - b; });
 				Game.moveTile(i, moveIndex);
+				
+				didTilesMove = true;
 			}
 		}
+		
+		return didTilesMove;
 	},
 	
 	moveDown: function() {
+		var didTilesMove = false;
+	
 		/* loop through the tiles starting from the bottom right of the grid and traverse up
 		   sliding the tiles up if necessary */
 		var tileIndex, moveIndex;
@@ -302,11 +346,17 @@ var Game = {
 				Game.squaresFilled.sort(function(a, b) { return a - b; });
 				Game.squaresEmpty.sort(function(a, b) { return a - b; });
 				Game.moveTile(i, moveIndex);
+				
+				didTilesMove = true;
 			}
 		}
+		
+		return didTilesMove;
 	},
 	
 	moveRight: function() {
+		var didTilesMove = false;
+		
 		/* loop through the tiles starting from the top left of the grid and traverse right
 		   sliding the tiles right if necessary */
 		var tileIndex, moveIndex;
@@ -368,11 +418,17 @@ var Game = {
 				Game.squaresFilled.sort(function(a, b) { return a - b; });
 				Game.squaresEmpty.sort(function(a, b) { return a - b; });
 				Game.moveTile(i, moveIndex);
+				
+				didTilesMove = true;
 			}
 		}
+		
+		return didTilesMove;
 	},
 	
 	moveLeft: function() {
+		var didTilesMove = false;
+		
 		/* loop through the tiles starting from the top left of the grid and traverse right
 		   sliding the tiles right if necessary */
 		var tileIndex, moveIndex;
@@ -435,23 +491,28 @@ var Game = {
 				Game.squaresFilled.sort(function(a, b) { return a - b; });
 				Game.squaresEmpty.sort(function(a, b) { return a - b; });
 				Game.moveTile(i, moveIndex);
+				
+				didTilesMove = true;
 			}
 		}
+		
+		return didTilesMove;
 	},
 	
 	moveTile: function(tileIndex, moveIndex) {
 		var tween = new Kinetic.Tween({
-			node: Game.tiles[tileIndex].text, 
+			node: Game.tiles[tileIndex].tile, 
 			x: Game.grid[moveIndex].x,
 			y: Game.grid[moveIndex].y,
 			easing: Kinetic.Easings['StrongEaseOut'],
 			duration: .03
         });
 		tween.play();
+		
 		tween = new Kinetic.Tween({
-			node: Game.tiles[tileIndex].tile, 
+			node: Game.tiles[tileIndex].text, 
 			x: Game.grid[moveIndex].x,
-			y: Game.grid[moveIndex].y,
+			y: Game.grid[moveIndex].y + 30,
 			easing: Kinetic.Easings['StrongEaseOut'],
 			duration: .03
         });
@@ -462,7 +523,7 @@ var Game = {
 		var tween = new Kinetic.Tween({
 			node: array[tileIndex].text, 
 			x: Game.grid[moveIndex].x,
-			y: Game.grid[moveIndex].y,
+			y: Game.grid[moveIndex].y + 30,
 			easing: Kinetic.Easings['StrongEaseOut'],
 			duration: .03
         });
@@ -478,6 +539,8 @@ var Game = {
 	},
 	
 	moveUpCombine: function() {
+		var didTilesMove = false;
+	
 		Game.tiles = Utilities.sortTileArray(Game.tiles);
 	
 		/* loop through the tiles and combine two tiles if they have the same value */
@@ -490,6 +553,7 @@ var Game = {
 			if((nextTile) && (nextTile.index % 4 !== 0)) {
 				/* if the two tiles have the same value and are adjacent to each other, combine them */
 				if((currTile.index === (nextTile.index - 1)) && (currTile.value === nextTile.value)) {
+					didTilesMove = true;
 					
 					/* destroy the next tile from the game */
 					var indexOfTileToRemove = Game.tiles.indexOf(nextTile);
@@ -501,10 +565,21 @@ var Game = {
 					
 					/* update the tiles value */
 					var newColorIndex = Utilities.getNextColor(Game.tiles[i].value);
+					
+					//if the value is too big, make the font smaller
+					if(Game.tiles[i].value >= 5000) {
+						Game.tiles[i].text.setAttr('fontSize', 30);
+					} else if(Game.tiles[i].value >= 500) {
+						Game.tiles[i].text.setAttr('fontSize', 40);
+					}
 					Game.tiles[i].tile.setAttr('fill', COLORS[newColorIndex]);
 					var newTileValue = Game.tiles[i].value * 2;
 					Game.tiles[i].text.setAttr('text', newTileValue);
 					Game.tiles[i].value = newTileValue;
+					
+					/* increase the score and change the UI to match */
+					Game.totalScore += newTileValue;
+					$('.score-number').text(Game.totalScore);
 					
 					/* if there are other tiles in that row, move them up to the next available space */
 					var searchUntilIndex = currTile.index < 3  ? 3
@@ -539,9 +614,13 @@ var Game = {
 				}
 			}
 		}
+		
+		return didTilesMove;
 	},
 	
 	moveDownCombine: function() {
+		var didTilesMove = false;
+		
 		Game.tiles = Utilities.sortTileArray(Game.tiles);
 		
 		/* loop through the tiles and combine two tiles if they have the same value */
@@ -554,7 +633,7 @@ var Game = {
 			if((nextTile) && (nextTile.index % 4 !== 3)) {
 				/* if the two tiles have the same value and are adjacent to each other, combine them */
 				if((currTile.index === (nextTile.index + 1)) && (currTile.value === nextTile.value)) {
-
+					didTilesMove = true;
 					/* destroy the next tile from the game */
 					var indexOfTileToRemove = Game.tiles.indexOf(nextTile);
 					Game.tiles[indexOfTileToRemove].tile.destroy();
@@ -569,9 +648,20 @@ var Game = {
 					/* update the tiles value */
 					var newColorIndex = Utilities.getNextColor(Game.tiles[i].value);
 					Game.tiles[i].tile.setAttr('fill', COLORS[newColorIndex]);
+					
+					//if the value is too big, make the font smaller
+					if(Game.tiles[i].value >= 5000) {
+						Game.tiles[i].text.setAttr('fontSize', 30);
+					} else if(Game.tiles[i].value >= 500) {
+						Game.tiles[i].text.setAttr('fontSize', 40);
+					}
 					var newTileValue = Game.tiles[i].value * 2;
 					Game.tiles[i].text.setAttr('text', newTileValue);
 					Game.tiles[i].value = newTileValue;
+					
+					/* increase the score and change the UI to match */
+					Game.totalScore += newTileValue;
+					$('.score-number').text(Game.totalScore);
 					
 					/* if there are other tiles in that row, move them up to the next available space */
 					var searchUntilIndex = currTile.index > 12 ? 12
@@ -606,9 +696,13 @@ var Game = {
 				}
 			}
 		}
+		
+		return didTilesMove;
 	},
 	
 	moveRightCombine: function() {
+		var didTilesMove = false;
+		
 		Game.tiles = Utilities.sortTileArray(Game.tiles);
 		
 		/* create a modified game tile array to loop through so that the order
@@ -636,6 +730,7 @@ var Game = {
 			if((nextTile) && (nextTile.index < 12)) {
 				/* if the two tiles have the same value and are adjacent to each other, combine them */
 				if(((currTile.index % 4) === (nextTile.index % 4)) && (currTile.value === nextTile.value)) {
+					didTilesMove = true;
 					
 					/* destroy the next tile from the game */
 					var indexOfTileToRemove = modifiedGameTiles.indexOf(nextTile);
@@ -650,11 +745,22 @@ var Game = {
 					/* update the tiles value */
 					var newColorIndex = Utilities.getNextColor(modifiedGameTiles[i].value);
 					modifiedGameTiles[i].tile.setAttr('fill', COLORS[newColorIndex]);
+					
+					//if the value is too big, make the font smaller
+					if(modifiedGameTiles[i].value >= 5000) {
+						modifiedGameTiles[i].text.setAttr('fontSize', 30);
+					} else if(modifiedGameTiles[i].value >= 500) {
+						modifiedGameTiles[i].text.setAttr('fontSize', 40);
+					}
 					var newTileValue = modifiedGameTiles[i].value * 2;
 					modifiedGameTiles[i].text.setAttr('text', newTileValue);
 					modifiedGameTiles[i].value = newTileValue;
 					Game.tiles = modifiedGameTiles;
 					Game.tiles = Utilities.sortTileArray(Game.tiles);
+					
+					/* increase the score and change the UI to match */
+					Game.totalScore += newTileValue;
+					$('.score-number').text(Game.totalScore);
 					
 					/* if there are other tiles in that row, move them up to the next available space */
 					var searchWithinModulusIndex = currTile.index % 4 === 3 ? 3
@@ -691,10 +797,112 @@ var Game = {
 				}
 			}
 		}
+		
+		return didTilesMove;
 	},
 	
 	moveLeftCombine: function() {
-		//Game.tiles = Utilities.sortTileArray(Game.tiles);
+		var didTilesMove = false;
+		
+		Game.tiles = Utilities.sortTileArray(Game.tiles);
+		
+		/* create a modified game tile array to loop through so that the order
+		 * of the tiles reads left to right, top to bottom */
+		var modifiedGameTiles = new Array(),
+			modulus = 3;
+			
+		while(modulus >= 0) {
+			for(var k=Game.tiles.length - 1; k>=0; k--) {
+				if(Game.tiles[k].index % 4 === modulus) {
+					modifiedGameTiles.push(Game.tiles[k]);
+				}
+			}
+			
+			modulus--;
+		}
+	
+		/* loop through the tiles and combine two tiles if they have the same value */
+		for(var i=modifiedGameTiles.length - 1; i >= 0; i--) {
+			var currTile = modifiedGameTiles[i];
+			/* if there is another tile, get at it and store it */
+			var nextTile = modifiedGameTiles[i-1] ? modifiedGameTiles[i-1] : null;
+			
+			/* check to see if the two tiles should be combined, only if they are in the same row */
+			if((nextTile) && (nextTile.index > 3)) {
+				/* if the two tiles have the same value and are adjacent to each other, combine them */
+				if(((currTile.index % 4) === (nextTile.index % 4)) && (currTile.value === nextTile.value)) {
+					didTilesMove = true;
+					
+					/* destroy the next tile from the game */
+					var indexOfTileToRemove = modifiedGameTiles.indexOf(nextTile);
+					modifiedGameTiles[indexOfTileToRemove].tile.destroy();
+					modifiedGameTiles[indexOfTileToRemove].text.destroy();
+					modifiedGameTiles.splice(indexOfTileToRemove, 1);
+					Game.tiles = modifiedGameTiles;
+					
+					//decrement i to compensate for list having one less item
+					i--;
+					
+					Game.tiles = Utilities.sortTileArray(Game.tiles);
+					Utilities.updateArrays();
+					
+					/* update the tiles value */
+					var newColorIndex = Utilities.getNextColor(modifiedGameTiles[i].value);
+					modifiedGameTiles[i].tile.setAttr('fill', COLORS[newColorIndex]);
+					
+					//if the value is too big, make the font smaller
+					if(modifiedGameTiles[i].value >= 5000) {
+						modifiedGameTiles[i].text.setAttr('fontSize', 30);
+					} else if(modifiedGameTiles[i].value >= 500) {
+						modifiedGameTiles[i].text.setAttr('fontSize', 40);
+					}
+					var newTileValue = modifiedGameTiles[i].value * 2;
+					modifiedGameTiles[i].text.setAttr('text', newTileValue);
+					modifiedGameTiles[i].value = newTileValue;
+					Game.tiles = modifiedGameTiles;
+					Game.tiles = Utilities.sortTileArray(Game.tiles);
+					
+					/* increase the score and change the UI to match */
+					Game.totalScore += newTileValue;
+					$('.score-number').text(Game.totalScore);
+					
+					/* if there are other tiles in that row, move them up to the next available space */
+					var searchWithinModulusIndex = currTile.index % 4 === 3 ? 3
+									     : currTile.index % 4 === 2 ? 2
+									     : currTile.index % 4 === 1 ? 1
+									     : currTile.index % 4 === 0 ? 0
+									     : null;
+					var moveToIndex = currTile.index + 4;
+					
+					for(var j=indexOfTileToRemove-1; j>=0; j--) {
+						var tile = modifiedGameTiles[j];
+						
+						/* if the tile is within the move range, move it to the next available space */
+						if(tile.index % 4 === searchWithinModulusIndex) {
+							Game.moveTileCustom(j, moveToIndex, modifiedGameTiles);
+
+							/* update the index of the moved tile */
+							modifiedGameTiles[j].index = moveToIndex;
+							
+							/* update arrays */
+							Game.tiles = modifiedGameTiles;
+							Game.tiles = Utilities.sortTileArray(Game.tiles);
+							Utilities.updateArrays();
+							
+							/* sort the arrays(not necessary but here for safety) */
+							Game.squaresFilled.sort(function(a, b) { return a - b; });
+							Game.squaresEmpty.sort(function(a, b) { return a - b; });
+							moveToIndex+=4;
+						} else {
+							break;
+						}
+					}
+					
+				}
+			}
+		}
+		
+		return didTilesMove;
 	},
 	
 	showScore: function() {
