@@ -1,6 +1,8 @@
 2048
 ====
 
+See the live version: http://kineticjs-2048.appspot.com/
+
 I re-coded 2048 with KineticJS just for fun, my intent was for this to be nearly identical to the famous 2048 app. 
 
 The reason why I first decided to do this was because the original 2048 was too slow for me.
