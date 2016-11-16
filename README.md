@@ -2,8 +2,9 @@
 ====
 
 See the live version: http://jakeruth.com/portfolioExternal/2048-game/2048.html
+*I created this back in college, since then KineticJS has been abandoned and is no longer maintained.*
 
-I re-coded 2048 with KineticJS just for fun, my intent was for this to be nearly identical to the famous 2048 app. 
+I re-coded 2048 with KineticJS just for fun, my intent was for this to be nearly identical to the famous 2048 app.
 
 The reason why I first decided to do this was because the original 2048 was too slow for me.
 I played it way too much (no seriously I lost my life to that game for a little) and I kept on 
